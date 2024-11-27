@@ -1,3 +1,5 @@
+import subprocess
+import shutil
 import argparse
 import xarray as xr
 from pathlib import Path
@@ -35,10 +37,8 @@ def main(args):
             
             # Skip downloading if file exists 
             if processed_sample_file.exists():
-                continue
-                
-            else:
-            
+                continue 
+            else: 
                 c.retrieve(
                     'reanalysis-era5-pressure-levels',
                     {
@@ -48,7 +48,7 @@ def main(args):
                         'year': year,
                         'month': month,
                         'day': config.DAYS,
-                        'time': '00:00',
+                        'time': ['00:00', '06:00', '12:00', '18:00'],
                         'grid': [RESOLUTION, RESOLUTION],
                         'format': 'netcdf',
                     },
@@ -57,15 +57,20 @@ def main(args):
                 # Break down into daily .zarr (cloud-optimized)
                 ds = xr.open_dataset(output_file)
                 ds['z'] = ds['z'] / config.G_CONSTANT ## Convert to gpm
-                n_timesteps = len(ds.valid_time)
-                
-                ## list() over multiple days
-                for n_idx in range(n_timesteps):
-                    subset_ds = ds.isel(valid_time=n_idx)
-                    yy, mm, dd = ds.valid_time[n_idx].dt.strftime('%Y-%m-%d').item().split('-')
+
+                # run over every day
+                for _, subset in ds.groupby('valid_time.day'):
+                    yy, mm, dd = subset.valid_time.dt.strftime('%Y-%m-%d').values[0].split('-')
                     output_daily_file = output_dir / f'era5_full_{RESOLUTION}deg_{yy}{mm}{dd}.zarr'
-                    subset_ds.to_zarr(output_daily_file)
-                
+                    subset.to_zarr(output_daily_file)
+
+                    # zip our zarr file
+                    zip_file = output_dir / f'era5_full_{RESOLUTION}deg_{yy}{mm}{dd}.zarr.zip'
+                    subprocess.run(['zip', '-0', '-r', str(zip_file), '.'], cwd=output_daily_file)
+
+                    # and finally delete the zarr file
+                    shutil.rmtree(output_daily_file)
+ 
                 output_file.unlink()
 
 if __name__ == "__main__":

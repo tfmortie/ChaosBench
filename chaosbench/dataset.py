@@ -29,7 +29,8 @@ class S2SObsDataset(Dataset):
         lead_time: int = 1,
         land_vars: List[str] = [],
         ocean_vars: List[str] = [],
-        is_normalized: bool = True
+        is_normalized: bool = True,
+        resolution: float = 1.5
     ) -> None:
         
         self.data_dir = [
@@ -50,6 +51,7 @@ class S2SObsDataset(Dataset):
         self.land_vars = land_vars
         self.ocean_vars = ocean_vars
         self.is_normalized = is_normalized
+        self.resolution = resolution
         
         # Subset files that match with patterns (eg. years specified)
         era5_files, lra5_files, oras5_files = list(), list(), list()
@@ -57,9 +59,9 @@ class S2SObsDataset(Dataset):
             pattern = rf'.*{year}\d{{4}}\.zarr$'
             
             curr_files = [
-                list(self.data_dir[0].glob(f'*{year}*.zarr')),
-                list(self.data_dir[1].glob(f'*{year}*.zarr')),
-                list(self.data_dir[2].glob(f'*{year}*.zarr'))
+                list(self.data_dir[0].glob(f'*_{str(self.resolution)}deg_{year}*.zarr')),
+                list(self.data_dir[1].glob(f'*_{str(self.resolution)}deg_{year}*.zarr')),
+                list(self.data_dir[2].glob(f'*_{str(self.resolution)}deg_{year}*.zarr'))
             ]
             
             era5_files.extend([f for f in curr_files[0] if re.match(pattern, str(f.name))])
@@ -141,7 +143,8 @@ class S2SEvalDataset(Dataset):
         s2s_name: str,
         years: List[int],
         is_ensemble = False,
-        is_normalized = True
+        is_normalized = True,
+        resolution: float = 1.5
     ) -> None:
         
         assert s2s_name in list(config.S2S_CENTERS.keys())
@@ -157,13 +160,14 @@ class S2SEvalDataset(Dataset):
         
         self.is_ensemble = is_ensemble
         self.is_normalized = is_normalized
+        self.resolution = resolution
 
         # Subset files that match with patterns (eg. years specified)
         file_paths = list()
-        
+    
         for year in self.years:
             pattern = rf'.*{year}\d{{4}}\.zarr$'
-            curr_files = list(self.data_dir.glob(f'*{year}*.zarr'))
+            curr_files = list(self.data_dir.glob(f'*_{str(self.resolution)}deg_{year}*.zarr'))
             file_paths.extend(
                 [f for f in curr_files if re.match(pattern, str(f.name))]
             )

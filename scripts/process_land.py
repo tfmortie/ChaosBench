@@ -33,7 +33,7 @@ def main(args):
             logging.info(f'Downloading {year}/{month}...')
             
             output_file = output_dir / f'lra5_full_{RESOLUTION}deg_{year}{month}.nc'
-            processed_sample_file = output_dir / f'lra5_full_{RESOLUTION}deg_{year}{month}01.zarr'
+            processed_sample_file = output_dir / f'lra5_full_{RESOLUTION}deg_{year}{month}01.zarr.zip'
             
             # Skip downloading if file exists 
             if processed_sample_file.exists():
